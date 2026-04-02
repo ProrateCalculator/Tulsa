@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prorate Calculator</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  padding: 12px;
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 500px;
+  margin: 0 auto;
+  background-color: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  text-align: center;
+  font-size: 18px;
+}
+
+label {
+  display: block;
+  margin-top: 10px;
+}
+
+.bold-underline {
+  font-weight: bold;
+  text-decoration: underline;
+  font-size: 15px;
+}
+
+input[type="number"],
+input[type="date"],
+select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 16px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.result {
+  margin-top: 16px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  font-size: 14px;
+  border-radius: 4px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Prorate Calculator</h2>
+
+  <label>
+    <span class="bold-underline">Draft Date:</span>
+    <select id="billingDay" onchange="setBillingDates()">
+      <option value="5" selected>5th</option>
+      <option value="20">20th</option>
+    </select>
+  </label>
+
+  <label>Start Date of Billing Period:
+    <input type="date" id="startDate">
+  </label>
+
+  <label>Rate Change Date:
+    <input type="date" id="changeDate">
+  </label>
+
+  <label>End Date of Billing Period:
+    <input type="date" id="endDate">
+  </label>
+
+  <label>
+    <span class="bold-underline">Original Monthly Rate ($):</span>
+    <input type="number" id="originalRate" step="0.01">
+  </label>
+
+  <label>
+    <span class="bold-underline">New Monthly Rate ($):</span>
+    <input type="number" id="newRate" step="0.01">
+  </label>
+
+  <button onclick="calculateProrate()">Calculate</button>
+
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+window.onload = function () {
+  setBillingDates();
+  const today = new Date();
+  document.getElementById('changeDate').value = today.toISOString().split('T')[0];
+};
+
+function setBillingDates() {
+  const billingDay = parseInt(document.getElementById('billingDay').value);
+  const today = new Date();
+  let year = today.getFullYear();
+  let month = today.getMonth();
+
+  let startDate = new Date(year, month, billingDay);
+
+  if (today < startDate) {
+    startDate = new Date(year, month - 1, billingDay);
+  }
+
+  let endDate = new Date(startDate);
+  endDate.setMonth(endDate.getMonth() + 1);
+  endDate.setDate(endDate.getDate() - 1);
+
+  document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+  document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+}
+
+function calculateProrate() {
+  const startDate = new Date(document.getElementById('startDate').value);
+  const changeDate = new Date(document.getElementById('changeDate').value);
+  const endDate = new Date(document.getElementById('endDate').value);
+  const originalRate = parseFloat(document.getElementById('originalRate').value);
+  const newRate = parseFloat(document.getElementById('newRate').value);
+
+  if (isNaN(originalRate) || isNaN(newRate) || !startDate || !changeDate || !endDate) {
+    document.getElementById('result').innerHTML = "<strong>Please fill in all fields correctly.</strong>";
+    return;
+  }
+
+  const totalDays = (endDate - startDate) / (1000 * 60 * 60 * 24) + 1;
+  const daysBeforeChange = (changeDate - startDate) / (1000 * 60 * 60 * 24);
+  const daysAfterChange = totalDays - daysBeforeChange;
+
+  if (totalDays <= 0 || daysBeforeChange < 0 || daysAfterChange < 0) {
+    document.getElementById('result').innerHTML = "<strong>Please check that the dates are in logical order.</strong>";
+    return;
+  }
+
+  const dailyOriginal = originalRate / totalDays;
+  const dailyNew = newRate / totalDays;
+
+  const proratedOriginal = dailyOriginal * daysBeforeChange;
+  const proratedNew = dailyNew * daysAfterChange;
+  const totalProrated = proratedOriginal + proratedNew;
+
+  const difference = totalProrated - originalRate;
+
+  document.getElementById('result').innerHTML = `
+    <strong>Upgrade Fee:</strong> $${difference.toFixed(2)}
+  `;
+}
+</script>
+
+</body>
+</html>
