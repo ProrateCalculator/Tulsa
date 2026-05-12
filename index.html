@@ -38,7 +38,7 @@ label {
   font-size: 15px;
 }
 
-input[type="text"],
+input[type="number"],
 input[type="date"],
 select {
   width: 100%;
@@ -118,12 +118,12 @@ button:hover {
 
   <label>
     <span class="bold-underline">Original Monthly Rate:</span>
-    <input type="text" id="originalRate" inputmode="decimal" autocomplete="off">
+    <input type="number" id="originalRate" step="0.01" inputmode="decimal" autocomplete="off" placeholder="0.00">
   </label>
 
   <label>
     <span class="bold-underline">New Monthly Rate:</span>
-    <input type="text" id="newRate" inputmode="decimal" autocomplete="off">
+    <input type="number" id="newRate" step="0.01" inputmode="decimal" autocomplete="off" placeholder="0.00">
   </label>
 
   <button onclick="calculateProrate()">Calculate</button>
@@ -137,9 +137,6 @@ window.onload = function () {
 
   const today = new Date();
   document.getElementById('changeDate').value = today.toISOString().split('T')[0];
-
-  attachCurrencyBehavior('originalRate');
-  attachCurrencyBehavior('newRate');
 };
 
 function setBillingDates() {
@@ -162,62 +159,6 @@ function setBillingDates() {
   document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
 }
 
-function attachCurrencyBehavior(id) {
-  const input = document.getElementById(id);
-
-  input.addEventListener('input', function () {
-    this.value = sanitizeNumericInput(this.value);
-  });
-
-  input.addEventListener('blur', function () {
-    const number = parseCurrencyValue(this.value);
-    this.value = number > 0 ? formatNumber(number) : '';
-  });
-
-  input.addEventListener('focus', function () {
-    if (this.value) {
-      this.value = this.value.replace(/,/g, '');
-    }
-  });
-
-  input.addEventListener('paste', function (event) {
-    event.preventDefault();
-    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-    this.value = sanitizeNumericInput(pastedText);
-  });
-}
-
-function sanitizeNumericInput(value) {
-  value = value.replace(/[^\d.]/g, '');
-
-  const parts = value.split('.');
-  if (parts.length > 2) {
-    value = parts[0] + '.' + parts.slice(1).join('');
-  }
-
-  const splitValue = value.split('.');
-  if (splitValue[1]) {
-    splitValue[1] = splitValue[1].slice(0, 2);
-    value = splitValue[0] + '.' + splitValue[1];
-  } else {
-    value = splitValue[0];
-  }
-
-  return value;
-}
-
-function parseCurrencyValue(value) {
-  if (!value) return 0;
-  return parseFloat(value.toString().replace(/,/g, '')) || 0;
-}
-
-function formatNumber(value) {
-  return value.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
-}
-
 function calculateProrate() {
   const startDateValue = document.getElementById('startDate').value;
   const changeDateValue = document.getElementById('changeDate').value;
@@ -231,8 +172,9 @@ function calculateProrate() {
   const startDate = new Date(startDateValue + 'T00:00:00');
   const changeDate = new Date(changeDateValue + 'T00:00:00');
   const endDate = new Date(endDateValue + 'T00:00:00');
-  const originalRate = parseCurrencyValue(document.getElementById('originalRate').value);
-  const newRate = parseCurrencyValue(document.getElementById('newRate').value);
+
+  const originalRate = parseFloat(document.getElementById('originalRate').value) || 0;
+  const newRate = parseFloat(document.getElementById('newRate').value) || 0;
 
   if (originalRate <= 0 || newRate <= 0) {
     document.getElementById('result').innerHTML = "<strong>Please enter both monthly rates.</strong>";
